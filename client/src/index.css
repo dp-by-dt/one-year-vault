@@ -5,21 +5,21 @@
 @tailwind utilities;
 
 :root {
-  /* Warm, paper-like palette */
-  --background: 40 20% 97%;      /* #F9F7F5 - Warm Paper */
-  --foreground: 30 10% 20%;      /* #383431 - Soft Charcoal */
+  /* Christmas-themed palette - minimal and elegant */
+  --background: 160 35% 98%;     /* Soft cool white with green hint */
+  --foreground: 140 20% 18%;     /* Deep forest green */
   
-  --primary: 30 10% 20%;         /* Matching foreground for strong elements */
-  --primary-foreground: 40 20% 98%; 
+  --primary: 0 85% 45%;          /* Elegant red */
+  --primary-foreground: 160 35% 98%;
   
-  --muted: 40 10% 92%;           /* Subtle darker paper */
-  --muted-foreground: 30 5% 45%; /* Stone gray */
+  --muted: 160 15% 90%;          /* Soft green-gray */
+  --muted-foreground: 140 10% 45%; /* Muted green-gray text */
   
-  --accent: 30 30% 90%;          /* Soft highlight */
-  --accent-foreground: 30 10% 15%;
+  --accent: 40 100% 50%;         /* Gold highlight */
+  --accent-foreground: 140 20% 18%;
   
-  --border: 30 10% 88%;
-  --input: 30 10% 88%;
+  --border: 160 25% 88%;
+  --input: 160 25% 88%;
   
   --radius: 0.75rem;
   
@@ -30,7 +30,7 @@
 
 @layer base {
   body {
-    @apply bg-background text-foreground antialiased font-sans selection:bg-stone-200 selection:text-black;
+    @apply bg-background text-foreground antialiased font-sans selection:bg-emerald-100 selection:text-emerald-900;
     /* Smooth scroll behavior */
     scroll-behavior: smooth;
   }
@@ -53,6 +53,6 @@
     @apply bg-transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-stone-300 rounded-full hover:bg-stone-400 transition-colors;
+    @apply bg-emerald-200 rounded-full hover:bg-emerald-300 transition-colors;
   }
 }

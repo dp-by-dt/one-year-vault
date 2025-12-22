@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useVault } from "@/hooks/use-vault";
 import { Button, Dialog, Input, Spinner } from "@/components/ui-components";
 import { motion, AnimatePresence } from "framer-motion";
@@ -41,26 +41,23 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F9F7F5] text-stone-800 font-sans selection:bg-stone-200">
+    <div className="min-h-screen bg-background text-foreground font-sans">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-[#F9F7F5]/80 backdrop-blur-md z-10 flex items-center justify-between px-4 sm:px-8 border-b border-stone-200/50">
+      <header className="fixed top-0 left-0 right-0 h-16 bg-background/80 backdrop-blur-md z-10 flex items-center justify-between px-4 sm:px-8 border-b border-emerald-200/30">
         <div className="flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-stone-400" />
+          {state.status === "locked" ? (
+            <Lock className="w-5 h-5 text-red-500" />
+          ) : (
+            <ShieldCheck className="w-5 h-5 text-emerald-600" />
+          )}
           <span className="font-serif font-bold text-lg tracking-tight">Vault</span>
         </div>
         
         <div className="flex items-center gap-3">
           {state.status === "open" ? (
-            <Button 
-              variant="primary" 
-              size="sm"
-              onClick={() => setLockModalOpen(true)}
-              className="gap-2 font-medium"
-              disabled={!content.trim()}
-            >
-              <Lock className="w-4 h-4" />
-              Lock Vault
-            </Button>
+            <div className="text-xs text-muted-foreground font-medium">
+              Locks <span className="text-red-500">Jan 1, 2026</span>
+            </div>
           ) : (
             <Button 
               variant="secondary" 
@@ -119,45 +116,38 @@ export default function Home() {
               exit={{ opacity: 0, scale: 1.05 }}
               className="flex-1 flex flex-col items-center justify-center text-center space-y-8"
             >
-              <div className="w-24 h-24 bg-stone-200 rounded-full flex items-center justify-center mb-4 shadow-inner">
-                <Lock className="w-10 h-10 text-stone-400" />
+              <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-4 shadow-inner">
+                <Lock className="w-10 h-10 text-red-500" />
               </div>
               
               <div className="space-y-4 max-w-md">
-                <h1 className="text-3xl sm:text-4xl font-serif font-bold text-stone-800">
-                  Vault Secured
+                <h1 className="text-3xl sm:text-4xl font-serif font-bold text-foreground">
+                  Vault Locked
                 </h1>
-                <p className="text-stone-500 leading-relaxed">
-                  Your thoughts are encrypted and stored safely on this device. 
-                  Come back when you're ready to reflect.
+                <p className="text-muted-foreground leading-relaxed">
+                  Your thoughts are safely encrypted on this device. 
+                  Only your password can reveal them.
                 </p>
               </div>
 
               <div className="pt-8 w-full max-w-xs space-y-3">
                 <Button 
                   onClick={() => setUnlockModalOpen(true)}
-                  variant="secondary" 
-                  className="w-full"
+                  variant="default" 
+                  className="w-full bg-red-500 hover:bg-red-600 text-white"
                 >
                   <Unlock className="w-4 h-4 mr-2" />
-                  Unlock Vault
+                  Unlock with Password
                 </Button>
                 
-                <p className="text-xs text-stone-400 px-4">
-                  Only your password can decrypt this content. We cannot recover it for you.
+                <p className="text-xs text-muted-foreground px-4">
+                  Enter your password to view your memories again.
                 </p>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
-
-      {/* Lock Dialog */}
-      <LockDialog 
-        isOpen={isLockModalOpen} 
-        onClose={() => setLockModalOpen(false)}
-        onConfirm={lockVault}
-      />
 
       {/* Unlock Dialog */}
       <UnlockDialog 
@@ -178,81 +168,6 @@ export default function Home() {
 }
 
 // === SUB-COMPONENTS ===
-
-function LockDialog({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose: () => void; onConfirm: (pw: string) => Promise<void> }) {
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
-    if (password !== confirm) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await onConfirm(password);
-      onClose();
-      // Reset form
-      setPassword("");
-      setConfirm("");
-    } catch (err: any) {
-      setError(err.message || "Failed to lock");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Dialog isOpen={isOpen} onClose={onClose} title="Secure your Vault">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <p className="text-sm text-stone-500 mb-4">
-          Set a strong password. If you lose this password, your content will be lost forever. 
-          <span className="font-semibold text-stone-700 block mt-1">We cannot recover it.</span>
-        </p>
-
-        <div className="space-y-2">
-          <label className="text-xs font-medium uppercase tracking-wider text-stone-400">Password</label>
-          <Input 
-            type="password" 
-            value={password} 
-            onChange={e => setPassword(e.target.value)}
-            placeholder="Minimum 8 characters"
-            autoFocus
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <label className="text-xs font-medium uppercase tracking-wider text-stone-400">Confirm Password</label>
-          <Input 
-            type="password" 
-            value={confirm} 
-            onChange={e => setConfirm(e.target.value)}
-            placeholder="Type it again"
-          />
-        </div>
-
-        {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
-
-        <div className="pt-4 flex justify-end gap-3">
-          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={loading} className="w-32">
-            {loading ? <Spinner /> : "Lock Forever"}
-          </Button>
-        </div>
-      </form>
-    </Dialog>
-  );
-}
 
 function UnlockDialog({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose: () => void; onConfirm: (pw: string) => Promise<void> }) {
   const [password, setPassword] = useState("");
@@ -277,12 +192,12 @@ function UnlockDialog({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose
   return (
     <Dialog isOpen={isOpen} onClose={onClose} title="Unlock Vault">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <p className="text-sm text-stone-500 mb-4">
-          Enter the password you used to lock this vault.
+        <p className="text-sm text-muted-foreground mb-4">
+          Enter your password to unlock your memories.
         </p>
 
         <div className="space-y-2">
-          <label className="text-xs font-medium uppercase tracking-wider text-stone-400">Password</label>
+          <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Password</label>
           <Input 
             type="password" 
             value={password} 
@@ -295,7 +210,7 @@ function UnlockDialog({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose
 
         <div className="pt-4 flex justify-end gap-3">
           <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={loading} className="w-32">
+          <Button type="submit" disabled={loading} className="w-32 bg-red-500 hover:bg-red-600 text-white">
             {loading ? <Spinner /> : "Unlock"}
           </Button>
         </div>

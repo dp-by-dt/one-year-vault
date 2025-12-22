@@ -56,25 +56,58 @@ export function useVault() {
             return;
           } catch (e) {
             console.error("Invalid locked data structure", e);
-            // Fallthrough to check draft if locked data is corrupt? 
-            // Better to show error, but for now let's assume no data.
           }
         }
 
         // Check for draft
         const draftData = await db!.get(STORE_DRAFT, "current");
+        let content = "";
+        let lastUpdated = Date.now();
+        
         if (draftData) {
           try {
             const parsed = vaultContentSchema.parse(draftData);
-            setState({ status: "open", content: parsed.content, lastUpdated: parsed.lastUpdated });
+            content = parsed.content;
+            lastUpdated = parsed.lastUpdated;
           } catch (e) {
-             // Schema migration or corruption
-             console.warn("Draft schema mismatch, resetting content");
-             setState({ status: "open", content: "", lastUpdated: Date.now() });
+            console.warn("Draft schema mismatch, resetting content");
+            content = "";
+            lastUpdated = Date.now();
+          }
+        }
+
+        // Check if auto-lock date has passed (Jan 1, 2026)
+        const lockDate = new Date(2026, 0, 1); // Jan 1, 2026
+        const now = new Date();
+        
+        if (now >= lockDate) {
+          // Auto-lock the vault with preset password
+          try {
+            const salt = Crypto.generateSalt();
+            const iv = Crypto.generateIV();
+            const key = await Crypto.deriveKey("DPBYDT", salt);
+            const encryptedBuffer = await Crypto.encryptContent(content, key, iv);
+            
+            const vaultData: EncryptedVault = {
+              ciphertext: Crypto.bufferToBase64(encryptedBuffer),
+              iv: Crypto.bufferToBase64(iv),
+              salt: Crypto.bufferToBase64(salt),
+              lockedAt: Date.now(),
+            };
+            
+            const tx = db.transaction([STORE_LOCKED, STORE_DRAFT], "readwrite");
+            await tx.objectStore(STORE_LOCKED).put(vaultData, "vault_data");
+            await tx.objectStore(STORE_DRAFT).delete("current");
+            await tx.done;
+            
+            setState({ status: "locked", lockedAt: vaultData.lockedAt });
+          } catch (e) {
+            console.error("Auto-lock failed:", e);
+            setState({ status: "open", content, lastUpdated });
           }
         } else {
-          // New vault
-          setState({ status: "open", content: "", lastUpdated: Date.now() });
+          // Vault still open
+          setState({ status: "open", content, lastUpdated });
         }
       } catch (e) {
         console.error("Error checking vault status:", e);
@@ -98,7 +131,7 @@ export function useVault() {
     }
   }, [db]);
 
-  // Lock the vault
+  // Lock the vault (Manual - not used now, but kept for reference)
   const lockVault = useCallback(async (password: string) => {
     if (!db || state.status !== "open") return;
     
@@ -136,9 +169,14 @@ export function useVault() {
     }
   }, [db, state]);
 
-  // Unlock the vault (Restore)
+  // Unlock the vault (Restore) - only accepts preset password "DPBYDT"
   const unlockVault = useCallback(async (password: string) => {
     if (!db || state.status !== "locked") return;
+
+    // Validate against preset password
+    if (password !== "DPBYDT") {
+      throw new Error("Incorrect password. Please try again.");
+    }
 
     try {
       const lockedData = await db.get(STORE_LOCKED, "vault_data");
@@ -151,8 +189,8 @@ export function useVault() {
       const iv = Crypto.base64ToBuffer(vault.iv);
       const ciphertext = Crypto.base64ToBuffer(vault.ciphertext);
       
-      // 2. Derive key again
-      const key = await Crypto.deriveKey(password, salt);
+      // 2. Derive key with preset password
+      const key = await Crypto.deriveKey("DPBYDT", salt);
       
       // 3. Decrypt
       const content = await Crypto.decryptContent(ciphertext, key, iv);
