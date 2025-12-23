@@ -5,6 +5,7 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  base: "/one-year-vault/",
   plugins: [
     react(),
     runtimeErrorOverlay(),
@@ -20,7 +21,7 @@ export default defineConfig({
         name: "One-Year Vault",
         short_name: "Vault",
         description: "A private, offline vault for personal writing",
-        start_url: "/",
+        start_url: "/one-year-vault/",
         display: "standalone",
         background_color: "#F9F7F5",
         theme_color: "#F9F7F5",
